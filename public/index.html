@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stock Visualization Demo</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 20px; background: #f9f9fb; }
+    h1 { color: #333; text-align: center; }
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    canvas { background: white; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>📈 Stock Price Visualization</h1>
+  <canvas id="stockChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.1/dist/chartjs-chart-financial.min.js"></script>
+<script>
+  async function loadChartData() {
+    const response = await fetch('/api/stock-prices');
+    const json = await response.json();
+
+    const ctx = document.getElementById('stockChart').getContext('2d');
+
+    new Chart(ctx, {
+      type: 'candlestick',
+      data: {
+        datasets: [{
+          label: 'Stock Price',
+          data: json.data.map(d => ({
+            x: new Date(d.x),
+            o: d.o,
+            h: d.h,
+            l: d.l,
+            c: d.c
+          })),
+          borderColor: '#000',
+          color: {
+            up: '#2ca02c',
+            down: '#d62728',
+            unchanged: '#999'
+          },
+          valueFont: { weight: '500' }
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              tooltipFormat: 'MMM dd, yyyy'
+            },
+            title: { display: true, text: 'Date' }
+          },
+          y: {
+            title: { display: true, text: 'Price (USD)' }
+          }
+        },
+        plugins: {
+          legend: { display: true },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false }
+      }
+    });
+  }
+
+  window.onload = loadChartData;
+</script>
+
+</body>
+</html>
