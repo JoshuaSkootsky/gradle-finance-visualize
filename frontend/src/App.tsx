@@ -6,6 +6,7 @@ import { useChartStore, useChartType, useShowVolume, useSelectedTimeRange } from
 import { ChartType } from '@/types/stock';
 import FinancialChart from '@/components/FinancialChart';
 import OptimizedChart from '@/components/OptimizedChart';
+import DrawableChart from '@/components/DrawableChart';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -70,7 +71,7 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <h1 className="text-xl font-semibold text-gray-900">
-              Real-time Financial Charts
+              📊 Interactive Financial Charts
             </h1>
             <div className="ml-4 flex items-center">
               <div className={`w-2 h-2 rounded-full mr-2 ${getConnectionStatusColor()}`} />
@@ -255,7 +256,7 @@ const ChartContainer = () => {
               className="w-full h-full"
             />
           ) : (
-            <FinancialChart
+            <DrawableChart
               width={chartDimensions.width - 32}
               height={chartDimensions.height - 32}
               className="w-full h-full"
