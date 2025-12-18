@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom'
+import { expect, vi } from 'vitest'
 
 // Global setup for tests
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
+;(globalThis as any).TextEncoder = TextEncoder;
+;(globalThis as any).TextDecoder = TextDecoder;

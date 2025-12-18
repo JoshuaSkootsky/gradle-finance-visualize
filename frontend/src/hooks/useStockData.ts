@@ -121,6 +121,7 @@ export const useRealTimeStockData = () => {
 export const useCombinedStockData = () => {
   const { data, isLoading, error, refetch } = useStockData();
   const { connectionState, lastMessage, connect, disconnect } = useRealTimeStockData();
+  const queryClient = useQueryClient();
 
   // Fallback to WebSocket data if HTTP fetch fails
   useEffect(() => {

@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useChartData } from '@/hooks/useStockData';
+import { useStockData } from '@/hooks/useStockData';
 import { StockData } from '@/types/stock';
 
 interface OptimizedChartProps {
@@ -13,24 +13,20 @@ const ITEM_HEIGHT = 40;
 const BUFFER_ITEMS = 20;
 
 const OptimizedChart = ({ width, height, className }: OptimizedChartProps) => {
-  const { data, isLoading, error } = useChartData();
+  const { data, isLoading, error } = useStockData();
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Memoized data processing with performance optimizations
   const processedData = useMemo(() => {
-    if (!data) return [];
-    
-    return data.map((item: StockData, index) => ({
+    if (!data || !data.length) return [];
+
+    return data.map((item, index) => ({
       ...item,
-      date: new Date(item.x),
-      displayDate: new Date(item.x).toLocaleDateString(),
-      displayTime: new Date(item.x).toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
       index,
-      change: index > 0 ? item.c - data[index - 1].c : 0,
-      changePercent: index > 0 ? ((item.c - data[index - 1].c) / data[index - 1].c) * 100 : 0,
+      displayDate: new Date(item.x).toLocaleDateString(),
+      displayTime: new Date(item.x).toLocaleTimeString(),
+      change: index > 0 && data[index - 1] ? item.c - data[index - 1]!.c : 0,
+      changePercent: index > 0 && data[index - 1] ? ((item.c - data[index - 1]!.c) / data[index - 1]!.c) * 100 : 0,
     }));
   }, [data]);
 
@@ -40,7 +36,6 @@ const OptimizedChart = ({ width, height, className }: OptimizedChartProps) => {
     getScrollElement: () => parentRef.current,
     estimateSize: () => ITEM_HEIGHT,
     overscan: BUFFER_ITEMS,
-    scrollBehavior: 'auto',
   });
 
   // Memoized color function
@@ -113,7 +108,6 @@ const OptimizedChart = ({ width, height, className }: OptimizedChartProps) => {
             <div
               key={virtualItem.key}
               data-index={virtualItem.index}
-              ref={virtualItem.measureElement}
               className="virtual-row"
               style={{
                 position: 'absolute',
@@ -172,7 +166,7 @@ const OptimizedChart = ({ width, height, className }: OptimizedChartProps) => {
       </div>
 
       {/* Performance stats for development */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <div className="fixed bottom-4 right-4 bg-gray-900 text-white text-xs p-3 rounded-lg shadow-lg">
           <div className="font-mono">
             <div>Total: {processedData.length.toLocaleString()}</div>

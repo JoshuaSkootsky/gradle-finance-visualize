@@ -1,9 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   server: {
     port: 3000,
     host: true, // Allow external connections
@@ -35,13 +41,13 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          charts: ['@react-financial-charts/core', '@react-financial-charts/series'],
-          utils: ['zustand', '@tanstack/react-virtual', 'd3'],
+          charts: ['recharts'],
+          utils: ['zustand', '@tanstack/react-virtual'],
         },
       },
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'zustand', '@tanstack/react-virtual'],
+    include: ['react', 'react-dom', 'zustand', '@tanstack/react-virtual', 'recharts'],
   },
 })
