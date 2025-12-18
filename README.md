@@ -38,6 +38,18 @@ The server will start at `http://localhost:8080`
 - Create distributable packages: `./gradlew assemble`
 - Run tests: `./gradlew test`
 
+
+### Testing
+
+🚀 How to Run Tests
+# Run all tests
+./test.sh
+# Or run separately
+./gradlew test                    # Backend only
+cd frontend && bun test            # Frontend only
+
+
+
 ## Project Structure
 
 ```

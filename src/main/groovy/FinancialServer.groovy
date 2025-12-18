@@ -1,6 +1,10 @@
 import com.sun.net.httpserver.*
 import groovy.json.JsonBuilder
 import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 // Load .env file
 def envFile = new File(".env")
@@ -18,7 +22,7 @@ if (envFile.exists()) {
 // createSampleData as a fallback
 def createSampleData() {
     def data = []
-    def now = new Date().clearTime()
+    def now = new Date()
     def basePrice = 150.0
 
     (1..30).eachWithIndex { i ->
@@ -48,18 +52,66 @@ def createSampleData() {
 // Create REST endpoint
 HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0)
 
+// WebSocket connections storage
+def webSocketConnections = new ConcurrentHashMap<WebSocket, String>()
 
-// api/stock-prices
+// Scheduled executor for real-time data streaming
+def scheduler = Executors.newScheduledThreadPool(1)
+
+
+// api/stock-prices - simplified for testing
 server.createContext("/api/stock-prices") { HttpExchange exchange ->
-    def data = fetchRealStockData() // Uses real data + fallback
-    def responseJson = new JsonBuilder([data: data]).toString()
-    def bytes = responseJson.getBytes("UTF-8")
+    try {
+        // Simple test data
+        def testData = [
+            [x: 1640995200000, o: 150.0, h: 155.0, l: 145.0, c: 152.0, v: 1000000],
+            [x: 1641081600000, o: 152.0, h: 158.0, l: 150.0, c: 157.0, v: 1200000],
+            [x: 1641168000000, o: 157.0, h: 160.0, l: 155.0, c: 158.0, v: 900000]
+        ]
+        
+        def responseJson = new JsonBuilder([data: testData]).toString()
+        def bytes = responseJson.getBytes("UTF-8")
 
-    exchange.getResponseHeaders().set("Content-Type", "application/json")
-    exchange.sendResponseHeaders(200, bytes.length)
-    exchange.getResponseBody().write(bytes)
+        exchange.getResponseHeaders().set("Content-Type", "application/json")
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*")
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type")
+        exchange.sendResponseHeaders(200, bytes.length)
+        exchange.getResponseBody().write(bytes)
+        exchange.getResponseBody().flush()
+    } catch (Exception e) {
+        println "API Error: ${e.message}"
+        e.printStackTrace()
+        exchange.sendResponseHeaders(500, -1)
+    } finally {
+        exchange.close()
+    }
+}
+
+// WebSocket endpoint - simplified for testing
+server.createContext("/ws") { HttpExchange exchange ->
+    if (exchange.getRequestMethod() == "GET") {
+        exchange.sendResponseHeaders(200, "WebSocket endpoint - not implemented yet".length())
+        exchange.getResponseBody().write("WebSocket endpoint - not implemented yet".getBytes())
+    }
     exchange.close()
 }
+
+// Start real-time data streaming
+scheduler.scheduleAtFixedRate({
+    if (!webSocketConnections.isEmpty()) {
+        def currentData = fetchRealStockData()
+        def message = new JsonBuilder([type: "update", data: currentData.takeLast(1)]).toString()
+        
+        webSocketConnections.keySet().each { ws ->
+            try {
+                ws.send(message)
+            } catch (Exception e) {
+                println "Error sending to WebSocket: ${e.message}"
+            }
+        }
+    }
+}, 0, 5, TimeUnit.SECONDS) // Send updates every 5 seconds
 
 // Serve frontend (HTML/JS/CSS)
 server.createContext("/") { HttpExchange exchange ->
@@ -69,8 +121,8 @@ server.createContext("/") { HttpExchange exchange ->
     def file = new File("public", fileName)
     if (file.exists()) {
         def contentType = fileName.endsWith(".js") ? "application/javascript" :
-                         fileName.endsWith(".css") ? "text/css" : "text/html"
-
+                         fileName.endsWith(".css") ? "text/css" : 
+                         fileName.endsWith(".ico") ? "image/x-icon" : "text/html"
         exchange.getResponseHeaders().set("Content-Type", contentType)
         def bytes = file.bytes
         exchange.sendResponseHeaders(200, bytes.length)
@@ -81,15 +133,50 @@ server.createContext("/") { HttpExchange exchange ->
     exchange.close()
 }
 
-// fetchFromAlphaVantage Fetch real AAPL data
-def fetchFromAlphaVantage() {
+// Simple WebSocket wrapper class
+class WebSocket {
+    def outputStream
+    def inputStream
+    def closed = false
 
+    WebSocket(outputStream, inputStream) {
+        this.outputStream = outputStream
+        this.inputStream = inputStream
+    }
+
+    void send(String message) {
+        if (!closed && outputStream) {
+            try {
+                def bytes = message.getBytes("UTF-8")
+                def frame = new byte[bytes.length + 2]
+                frame[0] = (byte) 0x81 // FIN=1, opcode=1 (text)
+                frame[1] = (byte) bytes.length
+                System.arraycopy(bytes, 0, frame, 2, bytes.length)
+                outputStream.write(frame)
+                outputStream.flush()
+            } catch (Exception e) {
+                closed = true
+                throw e
+            }
+        }
+    }
+
+    boolean isClosed() {
+        return closed
+    }
+}
+
+// fetchRealStockData Fetch real AAPL data with fallback
+def fetchRealStockData() {
     def apiKey = System.getenv("ALPHAVANTAGE_API_KEY")
+    
+    if (!apiKey) {
+        println "No Alpha Vantage API key found, using sample data"
+        return createSampleData()
+    }
 
     def symbol = "AAPL"
-    
     def url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact"
-    // Parse and format like sample data
 
     try {
         def json = new groovy.json.JsonSlurper().parse(new URL(url).newReader())
@@ -129,11 +216,13 @@ def fetchFromAlphaVantage() {
 
         return dataList.take(30) // Last 30 trading days
     } catch (Exception e) {
+        println "Failed to fetch real data: ${e.message}, using sample data"
         e.printStackTrace()
         return createSampleData() // Fallback to simulation on failure
     }
 }
 
-server.setExecutor(null) // Use default executor
+server.setExecutor(Executors.newCachedThreadPool()) // Use thread pool
 println "Server started at http://localhost:8080"
+println "WebSocket endpoint available at ws://localhost:8080/ws"
 server.start()
