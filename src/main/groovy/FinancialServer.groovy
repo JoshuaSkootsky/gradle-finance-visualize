@@ -89,7 +89,6 @@ def fetchFromAlphaVantage() {
     def symbol = "AAPL"
     
     def url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact"
-    def json = new URL(url).getText()
     // Parse and format like sample data
 
     try {
