@@ -13,9 +13,11 @@
     "type-check": "tsc --noEmit",
     "test": "bun --bun vitest",
     "test:ui": "bun --bun vitest --ui",
-    "test:run": "bun --bun vitest run"
+    "test:run": "bun --bun vitest run",
+    "test:build": "bun --bun vitest build.test.ts"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-virtual": "^3.10.8",
     "chart.js": "^4.5.1",
@@ -50,6 +52,7 @@
     "eslint-plugin-react-refresh": "^0.4.6",
     "jsdom": "^27.3.0",
     "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.2.2",
     "vite": "^5.2.0",

@@ -7,16 +7,21 @@ interface ChartState {
   timeframe?: string;
   annotations: DrawingAnnotation[];
   dataLength?: number;
+  chartType?: string;
+  showVolume?: boolean;
+  showGrid?: boolean;
 }
 
 interface DrawingAnnotation {
   id: string;
-  type: 'trendline' | 'fibonacci';
+  type: 'trendline' | 'fibonacci' | 'horizontal' | 'vertical' | 'rectangle' | 'arrow';
   startX: number;
   startY: number;
   endX: number;
   endY: number;
   fibLevels?: number[];
+  label?: string;
+  color?: string;
 }
 
 export const useChartUrl = (annotations: DrawingAnnotation[], symbol?: string, timeframe?: string) => {
@@ -76,13 +81,16 @@ export const useChartUrl = (annotations: DrawingAnnotation[], symbol?: string, t
       timeframe: timeframe || '1D',
       annotations,
       dataLength: 100, // Default to last 100 points
+      chartType: 'line', // Default chart type
+      showVolume: false, // Default volume setting
+      showGrid: true, // Default grid setting
     };
 
     const hash = serializeState(state);
     if (!hash) return window.location.origin + window.location.pathname;
 
     const queryParams = queryString.stringify({ view: hash });
-    return `${window.location.origin}${window.location.pathname}?${queryString}`;
+    return `${window.location.origin}${window.location.pathname}?${queryParams}`;
   }, [annotations, symbol, timeframe, serializeState]);
 
   // Share functionality
@@ -93,8 +101,8 @@ export const useChartUrl = (annotations: DrawingAnnotation[], symbol?: string, t
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Chart Analysis',
-          text: 'Check out this chart analysis',
+          title: 'Financial Chart Analysis',
+          text: 'Check out this financial chart analysis with my annotations',
           url,
         });
         return true;
@@ -104,16 +112,25 @@ export const useChartUrl = (annotations: DrawingAnnotation[], symbol?: string, t
       }
     }
 
-    // Fallback: copy to clipboard
+    // Fallback: copy to clipboard with better UX
     try {
       await navigator.clipboard.writeText(url);
-      // You might want to show a toast notification here
-      alert('Link copied to clipboard!');
+      // Show success message
+      alert('✅ Chart link copied to clipboard!\n\nYou can now share it with colleagues or save it for later.');
       return true;
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
       // Fallback: show the URL for manual copying
-      alert(`Share this link: ${url}`);
+      const confirmed = window.confirm(`📋 Copy this link:\n\n${url}\n\nClick OK to copy to clipboard manually`);
+      if (confirmed) {
+        try {
+          await navigator.clipboard.writeText(url);
+          alert('Link copied to clipboard!');
+        } catch {
+          // If we can't copy, just show the URL
+          prompt('Copy this link:', url);
+        }
+      }
       return false;
     }
   }, [generateShareUrl]);

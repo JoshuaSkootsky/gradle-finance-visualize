@@ -81,42 +81,38 @@ export const useWebSocket = () => {
         }
       };
 
-      ws.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
-        stopPing();
+       ws.current.onclose = (event) => {
+         console.log('WebSocket disconnected:', event.code, event.reason);
+         stopPing();
 
-        if (event.code !== 1000) { // Not a normal closure
-          setConnectionState({
-            status: 'error',
-            error: `Connection closed: ${event.reason || 'Unknown reason'}`,
-          });
+         if (event.code !== 1000) { // Not a normal closure
+           // Don't immediately show error state - try reconnecting first
+           setConnectionState({ status: 'connecting' });
 
-          // Attempt reconnection if we haven't exceeded max attempts
-          if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
-            reconnectAttempts.current++;
-            console.log(`Reconnection attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS}`);
-            
-            reconnectTimeout.current = setTimeout(() => {
-              connect();
-            }, RECONNECT_DELAY);
-          } else {
-            setConnectionState({
-              status: 'disconnected',
-              error: 'Max reconnection attempts reached',
-            });
-          }
-        } else {
-          setConnectionState({ status: 'disconnected' });
-        }
-      };
+           // Attempt reconnection if we haven't exceeded max attempts
+           if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
+             reconnectAttempts.current++;
+             console.log(`Reconnection attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS}`);
 
-      ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setConnectionState({
-          status: 'error',
-          error: 'WebSocket connection error',
-        });
-      };
+             reconnectTimeout.current = setTimeout(() => {
+               connect();
+             }, RECONNECT_DELAY);
+           } else {
+             setConnectionState({
+               status: 'error',
+               error: 'Connection lost - unable to reconnect',
+             });
+           }
+         } else {
+           setConnectionState({ status: 'disconnected' });
+         }
+       };
+
+       ws.current.onerror = (error) => {
+         console.error('WebSocket error:', error);
+         // Don't immediately fail - let onclose handle reconnection logic
+         // Just log the error for debugging
+       };
 
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
