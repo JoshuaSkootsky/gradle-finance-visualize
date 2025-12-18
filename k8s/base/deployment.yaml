@@ -1,0 +1,255 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: groovy-visualization
+  labels:
+    app: groovy-visualization
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: groovy-visualization
+  template:
+    metadata:
+      labels:
+        app: groovy-visualization
+        component: backend
+    spec:
+      containers:
+      - name: groovy-visualization
+        image: groovy-visualization:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: ALPHAVANTAGE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: groovy-visualization-secrets
+              key: alphavantage-api-key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/stock-prices
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/stock-prices
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: public-files
+          mountPath: /app/public
+          readOnly: true
+      volumes:
+      - name: public-files
+        configMap:
+          name: groovy-visualization-public
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 1000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: groovy-visualization-service
+  labels:
+    app: groovy-visualization
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: groovy-visualization
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: groovy-visualization-public
+  labels:
+    app: groovy-visualization
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Groovy Stock Visualization</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .chart-container {
+                position: relative;
+                height: 400px;
+                margin: 20px 0;
+            }
+            .info {
+                text-align: center;
+                color: #666;
+                margin-top: 20px;
+            }
+            .loading {
+                text-align: center;
+                padding: 50px;
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📈 Stock Price Visualization</h1>
+                <p>Real-time AAPL stock data with Chart.js</p>
+            </div>
+            
+            <div class="loading" id="loading">
+                Loading stock data...
+            </div>
+            
+            <div class="chart-container" style="display: none;">
+                <canvas id="stockChart"></canvas>
+            </div>
+            
+            <div class="info" id="info" style="display: none;">
+                <p>Data source: Alpha Vantage API | Last 30 trading days</p>
+            </div>
+        </div>
+
+        <script>
+            async function fetchStockData() {
+                try {
+                    const response = await fetch('/api/stock-prices');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    return data.data;
+                } catch (error) {
+                    console.error('Error fetching stock data:', error);
+                    throw error;
+                }
+            }
+
+            function createChart(data) {
+                const ctx = document.getElementById('stockChart').getContext('2d');
+                
+                // Format dates for display
+                const labels = data.map(item => {
+                    const date = new Date(item.x);
+                    return date.toLocaleDateString();
+                });
+                
+                const chart = new Chart(ctx, {
+                    type: 'candlestick',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'AAPL Stock Price',
+                            data: data,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Price (USD)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    }
+                });
+                
+                return chart;
+            }
+
+            // Initialize the application
+            document.addEventListener('DOMContentLoaded', async function() {
+                try {
+                    const stockData = await fetchStockData();
+                    
+                    // Hide loading, show chart
+                    document.getElementById('loading').style.display = 'none';
+                    document.querySelector('.chart-container').style.display = 'block';
+                    document.getElementById('info').style.display = 'block';
+                    
+                    // Create chart
+                    createChart(stockData);
+                    
+                } catch (error) {
+                    document.getElementById('loading').innerHTML = 
+                        `<p style="color: red;">Error loading stock data: ${error.message}</p>
+                         <p>Please try refreshing the page.</p>`;
+                }
+            });
+        </script>
+    </body>
+    </html>
+  chart.js: |
+    // For simplicity, using CDN in the HTML above
+    // If needed, you can add local Chart.js file content here

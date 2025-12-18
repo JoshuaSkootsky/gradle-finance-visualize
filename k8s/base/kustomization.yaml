@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: groovy-visualization-base
+
+resources:
+- deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/name: groovy-visualization
+  app.kubernetes.io/component: backend
+  app.kubernetes.io/version: "latest"
+
+images:
+- name: groovy-visualization
+  newTag: latest

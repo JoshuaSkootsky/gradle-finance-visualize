@@ -1,0 +1,51 @@
+# Development Dockerfile with hot reload support
+FROM gradle:8.11.1-jdk21 AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy gradle wrapper files first for better caching
+COPY gradlew gradlew.bat ./
+COPY gradle/wrapper/ gradle/wrapper/
+
+# Copy build configuration
+COPY build.gradle ./
+
+# Cache dependencies
+RUN ./gradlew dependencies || true
+
+# Copy source code
+COPY src/ src/
+COPY public/ public/
+
+# Development stage - includes source for hot reload
+FROM eclipse-temurin:21-jdk-alpine AS development
+
+# Install curl and other development tools
+RUN apk add --no-cache curl bash
+
+# Create application user
+RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -s /bin/sh -D appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy all files for development
+COPY --from=builder /app/ ./
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Create logs directory
+RUN mkdir -p logs && chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8080
+
+# Set development JVM options
+ENV JAVA_OPTS="-Xmx256m -Xms128m -XX:+UseG1GC -XX:+UseContainerSupport"
+
+# Entry point for development with hot reload
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
