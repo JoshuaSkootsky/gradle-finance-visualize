@@ -12,8 +12,12 @@ dependencies {
     compileOnly 'org.apache.groovy:groovy:4.0.24'
     implementation 'org.apache.groovy:groovy-json:4.0.24'
     
+    // Test dependencies with explicit JUnit platform
     testImplementation 'org.apache.groovy:groovy:4.0.24'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.3'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 application {
@@ -58,14 +62,27 @@ task serveStatic(type: JavaExec) {
     }
 }
 
-
-
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
+// Explicit test framework configuration for Gradle 9 compatibility
 test {
     useJUnitPlatform()
+    
+    // Explicitly declare test runtime dependencies
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// Add explicit test suite configuration for Gradle 9
+testing {
+    suites {
+        test {
+            useJUnitJupiter('5.10.3')
+        }
+    }
 }
