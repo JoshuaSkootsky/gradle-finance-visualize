@@ -15,9 +15,10 @@ export const useStockData = () => {
     queryKey: queryKeys.stockData,
     queryFn: apiClient.fetchStockData,
     refetchInterval: false, // We'll handle updates via WebSocket
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 1000 * 60 * 15, // 15 minutes - keep data fresh longer
+    retry: 2, // Reduce retries to fail faster
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Shorter delays
+    networkMode: 'offlineFirst', // Show cached data when offline
   });
 };
 

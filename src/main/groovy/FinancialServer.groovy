@@ -13,8 +13,6 @@ if (envFile.exists()) {
         if (line.contains("=")) {
             def (key, value) = line.split("=", 2)
             System.setProperty(key.trim(), value.trim())
-            System.setProperty("env.${key.trim()}", value.trim()) // for getenv compat
-            System.env.metaClass.getProperty = { name -> System.getProperty("env.\$name") ?: System.getenv(name) }
         }
     }
 }

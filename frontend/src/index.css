@@ -4,55 +4,67 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    /* Professional Financial Dashboard Theme */
+    --background: 0 0% 98%; /* Light gray background */
+    --foreground: 220 15% 15%; /* Dark navy text */
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 220 15% 15%; /* Dark navy text */
+    --popover: 0 0% 100%; /* White popovers */
+    --popover-foreground: 220 15% 15%; /* Dark navy text */
+    --primary: 217 92% 55%; /* Professional blue (#2563eb) */
+    --primary-foreground: 0 0% 100%; /* White text */
+    --secondary: 210 20% 95%; /* Light blue-gray background */
+    --secondary-foreground: 220 15% 25%; /* Medium gray text */
+    --muted: 210 20% 90%; /* Muted background */
+    --muted-foreground: 220 10% 40%; /* Muted text */
+    --accent: 217 92% 65%; /* Accent blue */
+    --accent-foreground: 0 0% 100%; /* White text */
+    --destructive: 0 84% 60%; /* Red for errors */
+    --destructive-foreground: 0 0% 100%; /* White text */
+    --border: 215 20% 85%; /* Light border */
+    --input: 215 20% 85%; /* Input border */
+    --ring: 217 92% 55%; /* Focus ring */
+    --radius: 0.5rem; /* Border radius */
+    
+    /* Financial colors */
+    --up-trend: 142 72% 29%; /* Green for gains (#059669) */
+    --down-trend: 352 95% 45%; /* Red for losses (#dc2626) */
+    --neutral: 45 100% 50%; /* Yellow for neutral */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    /* Dark theme for professional look */
+    --background: 220 15% 10%; /* Dark navy background */
+    --foreground: 0 0% 95%; /* Light text */
+    --card: 220 15% 15%; /* Darker card background */
+    --card-foreground: 0 0% 95%; /* Light text */
+    --popover: 220 15% 12%; /* Dark popover */
+    --popover-foreground: 0 0% 95%; /* Light text */
+    --primary: 217 92% 65%; /* Lighter blue */
+    --primary-foreground: 0 0% 100%; /* White text */
+    --secondary: 220 15% 20%; /* Darker secondary */
+    --secondary-foreground: 0 0% 85%; /* Lighter text */
+    --muted: 220 15% 25%; /* Muted background */
+    --muted-foreground: 0 0% 70%; /* Muted text */
+    --accent: 217 92% 75%; /* Lighter accent */
+    --accent-foreground: 0 0% 100%; /* White text */
+    --destructive: 0 84% 65%; /* Lighter red */
+    --destructive-foreground: 0 0% 100%; /* White text */
+    --border: 220 15% 25%; /* Darker border */
+    --input: 220 15% 25%; /* Darker input */
+    --ring: 217 92% 65%; /* Lighter focus ring */
   }
 }
 
 @layer base {
   body {
-    background-color: white;
-    color: #111827;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 16px;
+    line-height: 1.5;
   }
 }
 
@@ -66,6 +78,33 @@
   animation: spin 1s linear infinite;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-pulse-subtle {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Financial chart specific styles */
 .chart-container {
   width: 100%;
@@ -76,9 +115,36 @@
   display: flex;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid hsl(var(--border));
+  transition: background-color 0.2s ease;
 }
 
 .virtual-row:hover {
-  background-color: #f9fafb;
+  background-color: hsl(var(--secondary));
+}
+
+/* Financial colors */
+.text-up-trend {
+  color: hsl(var(--up-trend));
+}
+
+.text-down-trend {
+  color: hsl(var(--down-trend));
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+.transition-colors {
+  transition: color 0.2s ease;
+}
+
+.transition-opacity {
+  transition: opacity 0.2s ease;
+}
+
+.transition-transform {
+  transition: transform 0.2s ease;
 }
