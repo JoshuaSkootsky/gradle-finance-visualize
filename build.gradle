@@ -1,0 +1,71 @@
+plugins {
+    id 'groovy'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Groovy for compilation only - not needed at runtime
+    compileOnly 'org.apache.groovy:groovy:4.0.24'
+    implementation 'org.apache.groovy:groovy-json:4.0.24'
+    
+    testImplementation 'org.apache.groovy:groovy:4.0.24'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+}
+
+application {
+    mainClass = 'FinancialServer'
+}
+
+// Configure the application to run from the project root
+tasks.named('run', JavaExec) {
+    workingDir = project.projectDir
+    classpath = sourceSets.main.runtimeClasspath
+    standardInput = System.in
+    
+    // Set system properties for environment variables
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        envFile.eachLine { line ->
+            if (line.contains('=')) {
+                def (key, value) = line.split('=', 2)
+                systemProperty key.trim(), value.trim()
+            }
+        }
+    }
+}
+
+// Task to serve static files during development
+task serveStatic(type: JavaExec) {
+    group = 'application'
+    description = 'Run the server with static file serving'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'FinancialServer'
+    workingDir = project.projectDir
+    
+    // Set system properties for environment variables
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        envFile.eachLine { line ->
+            if (line.contains('=')) {
+                def (key, value) = line.split('=', 2)
+                systemProperty key.trim(), value.trim()
+            }
+        }
+    }
+}
+
+
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
